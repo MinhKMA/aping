@@ -52,6 +52,7 @@ class Point:
             tags = ''
         mesurement = self._encode(self.mesurement)
         fields = ','.join([self._encode_field(k, v) for k, v in self.fields.items()])
+        # print('{}{} {}{}\n'.format(mesurement, tags, fields, timestamp))
         return f"{mesurement}{tags} {fields}{timestamp}\n".encode("utf-8")
 
 
@@ -102,6 +103,7 @@ class Dest:
     def tags(self, probername):
         t = self._tags.copy()
         t.update({"probername": probername})
+        # print(t)
         return t
 
 
@@ -111,6 +113,7 @@ class Prober:
     def __init__(self, probername, influxclient, dests):
         self.probername = probername
         self.dests = {d.dest: d for d in dests}  # Fast lookup
+        print(self.dests)
         self.process = None
         self.influxclient = influxclient
         self.stop_event = asyncio.Event()
@@ -121,16 +124,7 @@ class Prober:
     def get_process(self):
         base_cmd = [
             "fping",
-            "--unreach",
-            "--backoff", "1",
-            "--elapsed",
-            "--retry", "0",
-            "--tos", "0",
-            "--squiet", "10",
-            "--period", "1000",
-            "--random",
-            "--timeout", "1000",
-            "--loop"
+            "-c", "3"
         ]
         cmd = base_cmd + [d.dest for d in self.dests.values()]
         logger.debug("execute {}".format(' '.join(cmd)))
@@ -145,16 +139,19 @@ class Prober:
 
     def readline(self, task):
         result = task.result()
+        # print(result)
         m = self.fping_re.match(result.decode("utf-8").strip())
+        # print("Day la m:{}\n".format(m))
         if m:
             destname = m.group("host")
+            # print(destname)
             dest = self.dests.get(destname)
             if not dest:
                 print("{} not found in {}".format(destname, self.dests.keys()))
                 return
             asyncio.async(self.influxclient.write(
                 Point(
-                    "fping",
+                    "test",
                     fields={
                         "sent": int(m.group("sent")),
                         "recv": int(m.group("recv")),
@@ -166,6 +163,7 @@ class Prober:
                     tags=dest.tags(self.probername),
                 )
             ))
+            # print(Point)
 
     def stopped(self, process, task):
         if process.returncode is None:

@@ -4,10 +4,10 @@ prober:
 output:
   influxdb:
     enable: true
-    url: https://myinfluxdb:8086
-    database: aping
-    username: aping
-    password: aping
+    url: http://192.168.30.67:8086
+    database: thuoclao
+    username: minhkma
+    password: minhkma
 probes:
   Free:
     fping: free.fr
